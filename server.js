@@ -1,8 +1,10 @@
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
+
 
 const app = express();
 const PORT = 3000;
@@ -27,6 +29,13 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE,
     password TEXT
 )`);
+// Add this middleware before your routes
+app.use(session({
+    secret: 'your-secret-key', // Change this to a secure key
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set true if using HTTPS
+}));
 
 // Serve the signup page
 app.get('/signup', (req, res) => {
@@ -60,9 +69,22 @@ app.post('/login', (req, res) => {
         if (!user || !bcrypt.compareSync(password, user.password)) {
             return res.redirect('/?error=invalid');
         }
-        res.send(`Welcome ${username}, you have successfully logged in.`);
+        res.redirect('/main.html');
+
     });
 });
+
+app.get('/logout', (req, res) => {
+    // Here you would typically clear the user session
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).send(err.message);
+        }
+        // Redirect to index.html after logging out
+        res.redirect('/index.html');
+    });
+});
+
 
 // Start the server
 app.listen(PORT, () => {
